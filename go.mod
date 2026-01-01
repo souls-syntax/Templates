@@ -1,4 +1,4 @@
-module github
+module github.com/souls-syntax/Templates
 
 go 1.25.5
 
