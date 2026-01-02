@@ -11,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/souls-syntax/Templates/internal/cache"
 	"github.com/souls-syntax/Templates/internal/service"
+	"github.com/souls-syntax/Templates/internal/database"
 )
 
 func main() {
@@ -19,6 +20,11 @@ func main() {
 	portString := os.Getenv("PORT")
 	redisUrl := os.Getenv("REDIS_URL")
 	bertUrl := os.Getenv("BERT_URL")
+	dbURL := os.Getenv("DB_URL")
+	
+	if dbURL == "" {
+		log.Fatal("DB_URL is not set")
+	}
 
 	if redisUrl == "" {
 		log.Fatal("Redis url not set")
@@ -27,13 +33,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
+	// Setting up redis
 	client := redis.NewClient(opt)
 	myCache := cache.NewRedisCache(client)
 	
+	// Setting up BERT 
 	bertClient := service.NewBertClient(bertUrl)
+	
+	// Setting up DB
+	store, err := database.NewStore(dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	myVerifier := service.NewVerifier(myCache, bertClient)
+	store.Init()
+
+	myVerifier := service.NewVerifier(myCache, bertClient, store)
 
 	apiCfg := &handlers.ApiConfig{
 		Verifier: myVerifier,

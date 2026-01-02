@@ -10,30 +10,31 @@ import (
 	"github.com/souls-syntax/Templates/internal/models"
 )
 
-type BertClient struct {
+type LlmClient struct {
 	BaseURL	string
 	HttpClient	*http.Client
 }
 
-func NewBertClient(url string) *BertClient {
-	return &BertClient{
+func NewLlmClient(url string) *LlmClient {
+	return &LlmClient{
 		BaseURL: url,
-		HttpClient: &http.Client{Timeout: 5*time.Second},
+		HttpClient: &http.Client{Timeout: 30*time.Second},
 	}
 }
 
-type bertRequest struct {
+type llmRequest struct {
 	Query string `json:"query_text"`
 }
 
-type bertResponse struct {
+type llmResponse struct {
 	Verdict					string	`json:"verdict"`
 	Confidence			float64	`json:"confidence"`
 	Decider					string	`json:"decider"`
+	// Explanation currently as place holder
 }
 
-func (b *BertClient) GetVerdict(ctx context.Context, text string) (models.Decision, error) {
-	reqBody, err := json.Marshal(bertRequest{Query: text})
+func (l *LlmClient) GetVerdict(ctx context.Context, text string) (models.Decision, error) {
+	reqBody, err := json.Marshal(llmRequest{Query: text})
 	if err != nil {
 		return models.Decision{}, err
 	}
@@ -41,7 +42,7 @@ func (b *BertClient) GetVerdict(ctx context.Context, text string) (models.Decisi
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		b.BaseURL+"/predict",
+		l.BaseURL+"/predict_llm",
 		bytes.NewBuffer(reqBody),
 	)
 	if err != nil {
@@ -50,7 +51,7 @@ func (b *BertClient) GetVerdict(ctx context.Context, text string) (models.Decisi
 
 	req.Header.Set("Content-Type","application/json")
 	
-	resp, err := b.HttpClient.Do(req)
+	resp, err := l.HttpClient.Do(req)
 	if err != nil {
 		return models.Decision{}, err
 	}
@@ -58,18 +59,18 @@ func (b *BertClient) GetVerdict(ctx context.Context, text string) (models.Decisi
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return models.Decision{}, fmt.Errorf("bert returned %d", resp.StatusCode)
+		return models.Decision{}, fmt.Errorf("Llm general returned %d", resp.StatusCode)
 	}
 
-	var bertResp bertResponse
+	var llmResp llmResponse
 
-	if err := json.NewDecoder(resp.Body).Decode(&bertResp); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&llmResp); err != nil {
 		return models.Decision{}, err
 	}
 
 	return models.Decision{
-		Verdict: bertResp.Verdict,
-		Confidence: bertResp.Confidence,
-		Decider:	bertResp.Decider,
+		Verdict: llmResp.Verdict,
+		Confidence: llmResp.Confidence,
+		Decider:	llmResp.Decider,
 	}, nil
 }

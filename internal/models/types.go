@@ -42,3 +42,13 @@ type CacheDecision struct {
 	Decider					 string
 }
 
+
+func (d Decision) ToCacheModel() CacheDecision {
+	return CacheDecision{
+		Verdict: d.Verdict,
+		Confidence: d.Confidence,
+		Decider: d.Decider,
+	}
+}
+
+
