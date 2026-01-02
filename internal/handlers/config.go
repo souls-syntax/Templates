@@ -2,9 +2,9 @@ package handlers
 
 import (
 
-	"github.com/souls-syntax/Templates/internal/cache"
+	"github.com/souls-syntax/Templates/internal/service"
 )
 
 type ApiConfig struct {
-	Cache *cache.RedisCache
-
+	Verifier *service.Verifier
+}

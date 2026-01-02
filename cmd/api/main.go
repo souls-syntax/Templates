@@ -10,6 +10,7 @@ import (
 	"github.com/souls-syntax/Templates/internal/handlers"
 	"github.com/redis/go-redis/v9"
 	"github.com/souls-syntax/Templates/internal/cache"
+	"github.com/souls-syntax/Templates/internal/service"
 )
 
 func main() {
@@ -17,18 +18,25 @@ func main() {
 
 	portString := os.Getenv("PORT")
 	redisUrl := os.Getenv("REDIS_URL")
+	bertUrl := os.Getenv("BERT_URL")
 
+	if redisUrl == "" {
+		log.Fatal("Redis url not set")
+	}
 	opt, err := redis.ParseURL(redisUrl)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	
 	client := redis.NewClient(opt)
-
 	myCache := cache.NewRedisCache(client)
+	
+	bertClient := service.NewBertClient(bertUrl)
+
+	myVerifier := service.NewVerifier(myCache, bertClient)
 
 	apiCfg := &handlers.ApiConfig{
-		Cache:myCache,
+		Verifier: myVerifier,
 	}
 
 	router := chi.NewRouter()
@@ -56,7 +64,7 @@ func main() {
 		Addr:		 ":"+portString,
 	}
 	log.Printf("Server Starting on port %v", portString)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -25,15 +25,15 @@ type Observation struct {
 }
 
 type VerifyResponse struct {
-	QueryHash 					string		`json:"query_hash"`
-	QueryText						string		`json:"query_text"`
+	QueryHash 					string		`json:"query_hash"` 	      	// Unique Identifier
+	QueryText						string		`json:"query_text"`           // The original question
 
-	DecisionVerdict			string		`json:"decision_verdict"`
-	DecisionConfidence	float64		`json:"decision_confidence"`
-	DecisionDecider			string		`json:"decison_decider"`
+	DecisionVerdict			string		`json:"decision_verdict"`			// Likely_True | Likely_False
+	DecisionConfidence	float64		`json:"decision_confidence"`  // Between 0 to 1
+	DecisionDecider			string		`json:"decision_decider"`     // The verdict giver BERT | LLM | human
 
-	ObsSource						string		`json:"obs_source"`
-	ObsProcessingTimeMs	int64			`json:"obs_processing_time"`
+	ObsSource						string		`json:"obs_source"`						// Where we got the data | CACHE | DB | BERT
+	ObsProcessingTimeMs	int64			`json:"obs_processing_time"`	// Time it took to process the request
 }
 
 type CacheDecision struct {
