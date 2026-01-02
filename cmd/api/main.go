@@ -8,15 +8,31 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/souls-syntax/Templates/internal/handlers"
+	"github.com/redis/go-redis/v9"
+	"github.com/souls-syntax/Templates/internal/cache"
 )
 
 func main() {
 	godotenv.Load(".env")
 
 	portString := os.Getenv("PORT")
-	
-	router := chi.NewRouter()
+	redisUrl := os.Getenv("REDIS_URL")
 
+	opt, err := redis.ParseURL(redisUrl)
+	if err != nil {
+		panic(err)
+	}
+	
+	client := redis.NewClient(opt)
+
+	myCache := cache.NewRedisCache(client)
+
+	apiCfg := &handlers.ApiConfig{
+		Cache:myCache,
+	}
+
+	router := chi.NewRouter()
+	
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:				[]string{"https://*","http://*"},
 		AllowedMethods:				[]string{"GET","POST","PUT","DELETE","OPTIONS"},
@@ -30,7 +46,8 @@ func main() {
 
 	v1Router.Get("/healthz",handlers.HandlerReadiness)
 	v1Router.Get("/err",handlers.HandlerErr)
-	v1Router.Post("/verify",handlers.HandlerVerify)
+
+	v1Router.Post("/verify",apiCfg.HandlerVerify)
 
 	router.Mount("/v1",v1Router)
 

@@ -2,7 +2,7 @@ package models
 
 type Query struct {
 	Query			string	`json:"query"`
-	UserID		string	`json:"userid"`
+	UserID		*string	`json:"userid"`
 }
 
 type Response struct {
@@ -29,9 +29,16 @@ type VerifyResponse struct {
 	QueryText						string		`json:"query_text"`
 
 	DecisionVerdict			string		`json:"decision_verdict"`
-	DecisionConfidence	string		`json:"decision_confidence"`
+	DecisionConfidence	float64		`json:"decision_confidence"`
 	DecisionDecider			string		`json:"decison_decider"`
 
 	ObsSource						string		`json:"obs_source"`
-	ObsProcessingTimeMs	string		`json:"obs_processing_time"`
+	ObsProcessingTimeMs	int64			`json:"obs_processing_time"`
 }
+
+type CacheDecision struct {
+	Verdict					 string
+	Confidence			 float64
+	Decider					 string
+}
+
