@@ -46,10 +46,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	store.Init()
 
-	myVerifier := service.NewVerifier(myCache, bertClient, store)
+
+	// Setting up LLM
+	llmClient := service.NewLlmClient(bertUrl)
+	
+	// Setting up the Worker Queue
+	myWorker := service.NewAsyncProcessor(llmClient, store, myCache)
+
+	myVerifier := service.NewVerifier(myCache, bertClient, store, myWorker)
 
 	apiCfg := &handlers.ApiConfig{
 		Verifier: myVerifier,

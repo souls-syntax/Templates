@@ -33,7 +33,7 @@ type llmResponse struct {
 	// Explanation currently as place holder
 }
 
-func (l *LlmClient) GetVerdict(ctx context.Context, text string) (models.Decision, error) {
+func (l *LlmClient) GetAnalysis(ctx context.Context, text string) (models.Decision, error) {
 	reqBody, err := json.Marshal(llmRequest{Query: text})
 	if err != nil {
 		return models.Decision{}, err

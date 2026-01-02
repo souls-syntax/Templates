@@ -5,7 +5,7 @@ import (
 	"time"
 	"errors"
 	"log"
-
+	"fmt"
 	"github.com/souls-syntax/Templates/internal/utils"
 	"github.com/souls-syntax/Templates/internal/models"
 	"github.com/souls-syntax/Templates/internal/cache"
@@ -17,13 +17,15 @@ type Verifier struct {
 	Cache	*cache.RedisCache
 	Bert	*BertClient
 	DB    *database.Store
+	Worker *AsyncProcessor
 }
 
-func NewVerifier(c *cache.RedisCache,b *BertClient, db *database.Store) *Verifier {
+func NewVerifier(c *cache.RedisCache,b *BertClient, db *database.Store, w *AsyncProcessor) *Verifier {
 	return &Verifier{
 		Cache: c,
 		Bert:  b,
 		DB:		 db,
+		Worker: w,
 	}
 }
 
@@ -115,6 +117,7 @@ func (v *Verifier) Verify(ctx context.Context, queryText string) (models.VerifyR
 		ProcessingTimeMs:	time.Since(start).Milliseconds(),
 	}
 	
+	// Background workers
 	go func() {
 
 		bgCtx := context.Background()
@@ -124,11 +127,18 @@ func (v *Verifier) Verify(ctx context.Context, queryText string) (models.VerifyR
 			log.Printf("Failed to save to cache Error: %v", err)
 		}
 
-		if finalSource != "Postgres-History" && (finalDecision.Verdict == "likely_false" || finalDecision.Verdict == "False") && finalDecision.Confidence > 0.90 {
+		if finalSource != "Postgres-History" && (finalDecision.Verdict == "likely_false" || finalDecision.Verdict == "False") && finalDecision.Confidence >= 0.90 {
 			v.DB.SaveDecision(finalDecision, finalSource)
 			log.Printf("Saved in database")
 		}
-	}()
 
+		if finalSource == "BERT-Python" && (finalDecision.Confidence < 0.90 || (finalDecision.Verdict == "likely_true" || finalDecision.Verdict == "True")) {
+
+    	fmt.Println("🤔 Low confidence detected.")
+			fmt.Println("📦 Dispatched to worker queue")
+    	v.Worker.Enqueue(hash, queryText)
+		}
+	}()
+	
 	return BuildResponse(finalDecision, obs), nil
 }
